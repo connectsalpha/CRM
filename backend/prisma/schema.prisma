@@ -1,0 +1,132 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
+  password  String
+  name      String
+  roleId    Int
+  role      Role       @relation(fields: [roleId], references: [id])
+  employee  Employee?
+  leads     Lead[]     @relation("CreatedLeads")
+  activities Activity[]
+  refreshToken String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Employee {
+  id     Int    @id @default(autoincrement())
+  userId Int    @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String
+  leads  Lead[] @relation("AssignedEmployee")
+}
+
+model Lead {
+  id                 Int       @id @default(autoincrement())
+  name               String
+  mobile             String
+  whatsappNumber     String?
+  email              String
+  businessName       String?
+  location           String?
+  interestedService  String?
+  source             String    
+  status             String    
+  priority           String    
+  dealValue          Float     @default(0)
+  followupDate       DateTime?
+  notes              String?
+  
+  createdById        Int
+  createdBy          User      @relation("CreatedLeads", fields: [createdById], references: [id])
+  
+  assignedEmployeeId Int?
+  assignedEmployee   Employee? @relation("AssignedEmployee", fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
+  
+  customer           Customer?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([assignedEmployeeId])
+  @@index([status])
+}
+
+model Customer {
+  id                  Int         @id @default(autoincrement())
+  leadId              Int         @unique
+  lead                Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  profile             String?     
+  conversationHistory String?     
+  payments            String?     
+  documents           String?     
+  feedback            String?     
+  quotations          Quotation[]
+  followups           Followup[]
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+}
+
+model Followup {
+  id          Int      @id @default(autoincrement())
+  customerId  Int
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  date        DateTime
+  reminder    Boolean  @default(false)
+  notes       String?
+  status      String   
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([customerId])
+}
+
+model Quotation {
+  id         Int             @id @default(autoincrement())
+  customerId Int
+  customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  quoteNo    String          @unique
+  total      Float
+  status     String          
+  items      QuotationItem[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([customerId])
+}
+
+model QuotationItem {
+  id          Int       @id @default(autoincrement())
+  quotationId Int
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  itemName    String
+  quantity    Int
+  price       Float
+  total       Float
+
+  @@index([quotationId])
+}
+
+model Activity {
+  id        Int      @id @default(autoincrement())
+  type      String   
+  details   String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
