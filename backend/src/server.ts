@@ -32,21 +32,36 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   process.env.FRONTEND_URL,
+  process.env.RENDER_EXTERNAL_URL,
 ].filter(Boolean) as string[];
 
 app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+  cors((req: any, callback: any) => {
+    const origin = req.headers.origin;
+    const corsOptions = {
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      origin: false as any,
+    };
+
+    if (!origin) {
+      corsOptions.origin = true;
+      return callback(null, corsOptions);
+    }
+
+    const host = req.headers.host;
+    const originHost = origin.replace(/^https?:\/\//, '');
+
+    const isLocal = originHost.startsWith('localhost:') || originHost.startsWith('127.0.0.1:');
+    const isSameOrigin = originHost === host;
+    const isAllowedCustom = allowedOrigins.includes(origin);
+
+    if (isLocal || isSameOrigin || isAllowedCustom) {
+      corsOptions.origin = origin;
+    }
+
+    callback(null, corsOptions);
   })
 );
 
