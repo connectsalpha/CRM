@@ -4,6 +4,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../../shared/services/api.js';
+import { formatCurrency } from '../../shared/utils/format.js';
 import { Plus, Printer, X, FileText, Trash2 } from 'lucide-react';
 
 const quotationSchema = z.object({
@@ -101,11 +102,25 @@ export default function QuotationsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-64 print:hidden">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm animate-pulse print:hidden font-sans">
+          <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between">
+            <div className="bg-slate-200 h-4 w-28 rounded-lg"></div>
+            <div className="bg-slate-200 h-4 w-32 rounded-lg"></div>
+          </div>
+          <div className="p-4 space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex gap-4 items-center">
+                <div className="bg-slate-200 h-4 w-20 rounded-lg"></div>
+                <div className="bg-slate-200 h-4 w-32 rounded-lg"></div>
+                <div className="bg-slate-200 h-4 w-12 rounded-lg"></div>
+                <div className="bg-slate-200 h-4 w-16 rounded-lg flex-1"></div>
+                <div className="bg-slate-200 h-4.5 w-10 rounded-lg"></div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:hidden">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm print:hidden font-sans">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
@@ -120,30 +135,34 @@ export default function QuotationsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {quotations.map((q: any) => (
-                  <tr key={q.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-4 font-semibold text-slate-800">#{q.quoteNo}</td>
-                    <td className="p-4 text-slate-500">{q.customer?.lead?.name}</td>
-                    <td className="p-4 text-slate-500">{q.items?.length || 0}</td>
-                    <td className="p-4 font-bold text-slate-800">${q.total}</td>
+                  <tr key={q.id} className="hover:bg-bg transition-colors h-12 text-[14px]">
+                    <td className="p-4 font-semibold text-text-primary">#{q.quoteNo}</td>
+                    <td className="p-4 text-text-secondary">{q.customer?.lead?.name}</td>
+                    <td className="p-4 text-text-secondary">{q.items?.length || 0}</td>
+                    <td className="p-4 font-bold text-text-primary">{formatCurrency(q.total)}</td>
                     <td className="p-4">
-                      <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
-                        q.status === 'Accepted' ? 'bg-emerald-50 text-emerald-600' :
-                        q.status === 'Declined' ? 'bg-red-50 text-red-600' :
-                        'bg-amber-50 text-amber-600'
+                      <span className={`text-[12px] px-2.5 py-1 rounded-full font-semibold ${
+                        q.status === 'Accepted' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                        q.status === 'Declined' ? 'bg-red-50 text-red-600 border border-red-100' :
+                        'bg-amber-50 text-amber-600 border border-amber-100'
                       }`}>{q.status}</span>
                     </td>
                     <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => handlePrint(q)}
-                          className="text-blue-600 hover:bg-blue-50 p-1.5 rounded transition-colors"
+                          className="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                           title="Print Quotation"
                         >
                           <Printer className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => deleteMutation.mutate(q.id)}
-                          className="text-red-500 hover:bg-red-50 p-1.5 rounded transition-colors"
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this quotation?')) {
+                              deleteMutation.mutate(q.id);
+                            }
+                          }}
+                          className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-md transition-colors"
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -159,7 +178,7 @@ export default function QuotationsPage() {
       )}
 
       {printingQuote && (
-        <div className="fixed inset-0 z-[100] bg-white p-8 overflow-y-auto hidden print:block">
+        <div className="fixed inset-0 z-[100] bg-white p-8 overflow-y-auto hidden print:block font-sans">
           <div className="max-w-3xl mx-auto space-y-8">
             <div className="flex justify-between items-start border-b border-slate-200 pb-6">
               <div>
@@ -201,8 +220,8 @@ export default function QuotationsPage() {
                   <tr key={item.id}>
                     <td className="py-3 px-4 font-medium text-slate-800">{item.itemName}</td>
                     <td className="py-3 px-4 text-center text-slate-600">{item.quantity}</td>
-                    <td className="py-3 px-4 text-right text-slate-600">${item.price}</td>
-                    <td className="py-3 px-4 text-right font-semibold text-slate-800">${item.total}</td>
+                    <td className="py-3 px-4 text-right text-slate-600">{formatCurrency(item.price)}</td>
+                    <td className="py-3 px-4 text-right font-semibold text-slate-800">{formatCurrency(item.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -212,7 +231,7 @@ export default function QuotationsPage() {
               <div className="w-64 space-y-2 text-sm">
                 <div className="flex justify-between border-t border-slate-200 pt-3">
                   <span className="font-bold text-slate-800">Total:</span>
-                  <span className="font-black text-lg text-blue-600">${printingQuote.total}</span>
+                  <span className="font-black text-lg text-blue-600">{formatCurrency(printingQuote.total)}</span>
                 </div>
               </div>
             </div>
@@ -240,11 +259,11 @@ export default function QuotationsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar font-sans">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Select Customer</label>
-                  <select {...register('customerId')} className="w-full border border-slate-200 px-3 py-2 rounded-lg outline-none focus:border-blue-500 bg-white">
+                  <select {...register('customerId')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-white text-sm font-medium">
                     <option value="">Select a Customer</option>
                     {customers.map((c: any) => (
                       <option key={c.id} value={c.id}>{c.lead?.name}</option>
@@ -255,7 +274,7 @@ export default function QuotationsPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Quote Number</label>
-                  <input type="text" {...register('quoteNo')} className="w-full border border-slate-200 px-3 py-2 rounded-lg outline-none focus:border-blue-500" placeholder="QT-1001" />
+                  <input type="text" {...register('quoteNo')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" placeholder="QT-1001" />
                   {errors.quoteNo && <p className="text-xs text-red-500 mt-1">{errors.quoteNo.message}</p>}
                 </div>
               </div>
@@ -268,25 +287,25 @@ export default function QuotationsPage() {
                       type="text"
                       placeholder="Item Name"
                       {...register(`items.${index}.itemName` as const)}
-                      className="flex-1 border border-slate-200 px-3 py-2 rounded-lg outline-none focus:border-blue-500 text-sm"
+                      className="flex-1 border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium"
                     />
                     <input
                       type="number"
                       placeholder="Qty"
                       {...register(`items.${index}.quantity` as const)}
-                      className="w-16 border border-slate-200 px-3 py-2 rounded-lg outline-none focus:border-blue-500 text-sm text-center"
+                      className="w-16 border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium text-center"
                     />
                     <input
                       type="number"
                       placeholder="Price"
                       {...register(`items.${index}.price` as const)}
-                      className="w-24 border border-slate-200 px-3 py-2 rounded-lg outline-none focus:border-blue-500 text-sm text-right"
+                      className="w-24 border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium text-right"
                     />
                     {fields.length > 1 && (
                       <button
                         type="button"
                         onClick={() => remove(index)}
-                        className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                        className="text-red-500 hover:bg-red-50 p-2.5 rounded-xl transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -296,7 +315,7 @@ export default function QuotationsPage() {
                 <button
                   type="button"
                   onClick={() => append({ itemName: '', quantity: 1, price: 0 })}
-                  className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"
+                  className="text-xs font-bold text-blue-600 hover:text-blue-500 flex items-center gap-1 mt-1 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Another Item
                 </button>
@@ -306,16 +325,19 @@ export default function QuotationsPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors"
+                  className="btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold transition-colors"
+                  className="btn-primary"
                 >
-                  Create
+                  {createMutation.isPending && (
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white/30 border-t-white"></div>
+                  )}
+                  <span>Create</span>
                 </button>
               </div>
             </form>

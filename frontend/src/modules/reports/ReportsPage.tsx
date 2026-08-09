@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../shared/services/api.js';
+import { formatCurrency } from '../../shared/utils/format.js';
 import { useAuthStore } from '../../shared/hooks/useAuthStore.js';
 import { BarChart3, FileText, Users, Download } from 'lucide-react';
 
@@ -133,7 +134,7 @@ export default function ReportsPage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm outline-none focus:border-blue-500"
+              className="w-full border border-slate-200 px-3.5 py-2 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
             />
           </div>
 
@@ -143,7 +144,7 @@ export default function ReportsPage() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm outline-none focus:border-blue-500"
+              className="w-full border border-slate-200 px-3.5 py-2 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
             />
           </div>
 
@@ -153,7 +154,7 @@ export default function ReportsPage() {
               <select
                 value={selectedEmployeeId}
                 onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm outline-none focus:border-blue-500 bg-white"
+                className="w-full border border-slate-200 px-3.5 py-2 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-white font-medium"
               >
                 <option value="">All Employees</option>
                 {employees.map((emp: any) => (
@@ -169,7 +170,7 @@ export default function ReportsPage() {
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm outline-none focus:border-blue-500 bg-white"
+                className="w-full border border-slate-200 px-3.5 py-2 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-white font-medium"
               >
                 <option value="">All Statuses</option>
                 {['New Lead', 'Contacted', 'Qualified', 'Proposal Sent', 'Negotiation', 'Follow-up', 'Converted', 'Lost'].map((st) => (
@@ -182,8 +183,20 @@ export default function ReportsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm animate-pulse font-sans">
+          <div className="p-4 bg-slate-50 border-b border-slate-200">
+            <div className="bg-slate-200 h-4 w-32 rounded-lg"></div>
+          </div>
+          <div className="p-4 space-y-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex gap-4 items-center">
+                <div className="bg-slate-200 h-4 w-28 rounded-lg"></div>
+                <div className="bg-slate-200 h-4 w-36 rounded-lg"></div>
+                <div className="bg-slate-200 h-4 w-24 rounded-lg flex-1"></div>
+                <div className="bg-slate-200 h-4 w-12 rounded-lg"></div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
@@ -204,15 +217,15 @@ export default function ReportsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {reportData.map((lead: any) => (
-                    <tr key={lead.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="p-4 font-semibold text-slate-800">{lead.name}</td>
-                      <td className="p-4 text-slate-500">{lead.businessName || '-'}</td>
-                      <td className="p-4 text-slate-500">{lead.email}</td>
-                      <td className="p-4 text-slate-500">{lead.source}</td>
-                      <td className="p-4"><span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-semibold">{lead.status}</span></td>
-                      <td className="p-4"><span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs">{lead.priority}</span></td>
-                      <td className="p-4 text-slate-500">{lead.assignedEmployee?.name || 'Unassigned'}</td>
-                      <td className="p-4 text-slate-400">{new Date(lead.createdAt).toLocaleDateString()}</td>
+                    <tr key={lead.id} className="hover:bg-bg transition-colors h-12 text-[14px]">
+                      <td className="p-4 font-semibold text-text-primary">{lead.name}</td>
+                      <td className="p-4 text-text-secondary">{lead.businessName || '-'}</td>
+                      <td className="p-4 text-text-secondary">{lead.email}</td>
+                      <td className="p-4 text-text-secondary">{lead.source}</td>
+                      <td className="p-4"><span className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full text-[12px] font-semibold">{lead.status}</span></td>
+                      <td className="p-4"><span className="bg-slate-100 text-text-secondary px-2.5 py-1 rounded-full text-[12px]">{lead.priority}</span></td>
+                      <td className="p-4 text-text-secondary">{lead.assignedEmployee?.name || 'Unassigned'}</td>
+                      <td className="p-4 text-text-secondary">{new Date(lead.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -234,12 +247,12 @@ export default function ReportsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {reportData.map((cust: any) => (
-                    <tr key={cust.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="p-4 font-semibold text-slate-800">{cust.lead?.name}</td>
-                      <td className="p-4 text-slate-500">{cust.lead?.email}</td>
-                      <td className="p-4 text-slate-500">{cust.lead?.mobile}</td>
-                      <td className="p-4 text-slate-500">{cust.lead?.assignedEmployee?.name || 'Unassigned'}</td>
-                      <td className="p-4 text-slate-400">{new Date(cust.createdAt).toLocaleDateString()}</td>
+                    <tr key={cust.id} className="hover:bg-bg transition-colors h-12 text-[14px]">
+                      <td className="p-4 font-semibold text-text-primary">{cust.lead?.name}</td>
+                      <td className="p-4 text-text-secondary">{cust.lead?.email}</td>
+                      <td className="p-4 text-text-secondary">{cust.lead?.mobile}</td>
+                      <td className="p-4 text-text-secondary">{cust.lead?.assignedEmployee?.name || 'Unassigned'}</td>
+                      <td className="p-4 text-text-secondary">{new Date(cust.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -261,12 +274,12 @@ export default function ReportsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {reportData.map((sale: any) => (
-                    <tr key={sale.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="p-4 font-semibold text-slate-800">{sale.name}</td>
-                      <td className="p-4 text-slate-500">{sale.businessName || '-'}</td>
-                      <td className="p-4 text-slate-500">{sale.assignedEmployee?.name || 'Unassigned'}</td>
-                      <td className="p-4 text-slate-400">{new Date(sale.updatedAt).toLocaleDateString()}</td>
-                      <td className="p-4 text-right font-bold text-emerald-600">${sale.dealValue}</td>
+                    <tr key={sale.id} className="hover:bg-bg transition-colors h-12 text-[14px]">
+                      <td className="p-4 font-semibold text-text-primary">{sale.name}</td>
+                      <td className="p-4 text-text-secondary">{sale.businessName || '-'}</td>
+                      <td className="p-4 text-text-secondary">{sale.assignedEmployee?.name || 'Unassigned'}</td>
+                      <td className="p-4 text-text-secondary">{new Date(sale.updatedAt).toLocaleDateString()}</td>
+                      <td className="p-4 text-right font-bold text-success">{formatCurrency(sale.dealValue)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -89,11 +89,24 @@ export default function FollowupsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm animate-pulse font-sans">
+          <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between">
+            <div className="bg-slate-200 h-4 w-32 rounded-lg"></div>
+            <div className="bg-slate-200 h-4 w-40 rounded-lg"></div>
+          </div>
+          <div className="p-4 space-y-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex gap-4 items-center">
+                <div className="bg-slate-200 h-4 w-28 /12 rounded-lg"></div>
+                <div className="bg-slate-200 h-4 w-36 rounded-lg"></div>
+                <div className="bg-slate-200 h-4 w-48 rounded-lg flex-1"></div>
+                <div className="bg-slate-200 h-4 w-12 rounded-lg"></div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm font-sans">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
@@ -108,38 +121,38 @@ export default function FollowupsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {followups.map((f: any) => (
-                  <tr key={f.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-4 font-semibold text-slate-800">{f.customer?.lead?.name}</td>
-                    <td className="p-4 text-slate-500">
+                  <tr key={f.id} className="hover:bg-bg transition-colors h-12 text-[14px]">
+                    <td className="p-4 font-semibold text-text-primary">{f.customer?.lead?.name}</td>
+                    <td className="p-4 text-text-secondary">
                       {new Date(f.date).toLocaleString()}
                     </td>
-                    <td className="p-4 text-slate-500 max-w-xs truncate">{f.notes || '-'}</td>
+                    <td className="p-4 text-text-secondary max-w-xs truncate">{f.notes || '-'}</td>
                     <td className="p-4">
-                      <span className={`text-xs px-2 py-0.5 rounded font-bold ${f.reminder ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                      <span className={`text-[12px] px-2.5 py-1 rounded-full font-bold ${f.reminder ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>
                         {f.reminder ? 'Yes' : 'No'}
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
-                        f.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' :
-                        f.status === 'Cancelled' ? 'bg-red-50 text-red-600' :
-                        'bg-amber-50 text-amber-600'
+                      <span className={`text-[12px] px-2.5 py-1 rounded-full font-semibold ${
+                        f.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                        f.status === 'Cancelled' ? 'bg-red-50 text-red-600 border border-red-100' :
+                        'bg-amber-50 text-amber-600 border border-amber-100'
                       }`}>{f.status}</span>
                     </td>
                     <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center justify-end gap-1">
                         {f.status === 'Pending' && (
                           <>
                             <button
                               onClick={() => updateStatusMutation.mutate({ id: f.id, status: 'Completed' })}
-                              className="text-emerald-600 hover:bg-emerald-50 p-1.5 rounded transition-colors"
+                              className="w-8 h-8 flex items-center justify-center text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
                               title="Mark Completed"
                             >
                               <Check className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => updateStatusMutation.mutate({ id: f.id, status: 'Cancelled' })}
-                              className="text-red-500 hover:bg-red-50 p-1.5 rounded transition-colors"
+                              className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-md transition-colors"
                               title="Cancel"
                             >
                               <X className="w-4 h-4" />
@@ -147,8 +160,12 @@ export default function FollowupsPage() {
                           </>
                         )}
                         <button
-                          onClick={() => deleteMutation.mutate(f.id)}
-                          className="text-red-500 hover:bg-red-50 p-1.5 rounded transition-colors"
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this follow-up schedule?')) {
+                              deleteMutation.mutate(f.id);
+                            }
+                          }}
+                          className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-md transition-colors"
                           title="Delete Schedule"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -173,10 +190,10 @@ export default function FollowupsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4 font-sans">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Select Customer</label>
-                <select {...register('customerId')} className="w-full border border-slate-200 px-3 py-2 rounded-lg outline-none focus:border-blue-500 bg-white">
+                <select {...register('customerId')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-white text-sm font-medium">
                   <option value="">Select a Customer</option>
                   {customers.map((c: any) => (
                     <option key={c.id} value={c.id}>{c.lead?.name} ({c.lead?.businessName || 'No Company'})</option>
@@ -187,7 +204,7 @@ export default function FollowupsPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Follow-up Date & Time</label>
-                <input type="datetime-local" {...register('date')} className="w-full border border-slate-200 px-3 py-2 rounded-lg outline-none focus:border-blue-500" />
+                <input type="datetime-local" {...register('date')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" />
                 {errors.date && <p className="text-xs text-red-500 mt-1">{errors.date.message}</p>}
               </div>
 
@@ -198,23 +215,26 @@ export default function FollowupsPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notes / Objectives</label>
-                <textarea {...register('notes')} rows={3} className="w-full border border-slate-200 px-3 py-2 rounded-lg outline-none focus:border-blue-500"></textarea>
+                <textarea {...register('notes')} rows={3} className="w-full border border-slate-200 px-3.5 py-2.5 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium"></textarea>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors"
+                  className="btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold transition-colors"
+                  className="btn-primary"
                 >
-                  Schedule
+                  {createMutation.isPending && (
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white/30 border-t-white"></div>
+                  )}
+                  <span>Schedule</span>
                 </button>
               </div>
             </form>

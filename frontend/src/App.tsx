@@ -13,13 +13,14 @@ import FollowupsPage from './modules/followups/FollowupsPage.js';
 import QuotationsPage from './modules/quotations/QuotationsPage.js';
 import ReportsPage from './modules/reports/ReportsPage.js';
 import ProfilePage from './modules/auth/ProfilePage.js';
+import UsersPage from './modules/users/UsersPage.js';
 
 import ToastContainer from './shared/components/ToastContainer.js';
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuthStore();
+function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
+  const { isAuthenticated, isLoading, user } = useAuthStore();
 
   if (isLoading) {
     return (
@@ -31,6 +32,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/" replace />;
   }
 
   return <DashboardLayout>{children}</DashboardLayout>;
@@ -109,6 +114,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <ReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/team"
+            element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <UsersPage />
               </ProtectedRoute>
             }
           />
