@@ -22,6 +22,7 @@ import dashboardRouter from './modules/dashboard/dashboard.controller.js';
 validateEnv();
 
 dotenv.config();
+dotenv.config({ path: path.join(process.cwd(), 'backend', '.env') });
 
 const app = express();
 app.use(helmet());
@@ -79,6 +80,26 @@ app.use('/api/followups', followupsRouter);
 app.use('/api/quotations', quotationsRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/dashboard', dashboardRouter);
+
+// Serve static frontend assets in production
+const frontendDir = path.join(process.cwd(), 'frontend', 'dist');
+if (fs.existsSync(frontendDir)) {
+  console.log(`Serving static frontend from: ${frontendDir}`);
+  app.use(express.static(frontendDir));
+  app.get('*', (req, res, next) => {
+    if (
+      req.path.startsWith('/api') ||
+      req.path.startsWith('/uploads') ||
+      req.path.startsWith('/health') ||
+      req.path.startsWith('/ready')
+    ) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDir, 'index.html'));
+  });
+} else {
+  console.warn(`Static frontend directory not found at: ${frontendDir}`);
+}
 
 app.use(errorHandler);
 

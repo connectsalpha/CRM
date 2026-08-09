@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
+import path from 'path';
 dotenv.config();
+dotenv.config({ path: path.join(process.cwd(), 'backend', '.env') });
 
 const REQUIRED_ENV_VARS = [
   'DATABASE_URL',

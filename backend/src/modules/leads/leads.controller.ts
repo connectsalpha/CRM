@@ -108,22 +108,26 @@ router.post('/', authenticateJWT, validateRequest({ body: leadCreateSchema }), a
     let finalEmployeeId = assignedEmployeeId ? Number(assignedEmployeeId) : null;
 
     if (!finalEmployeeId) {
-      const employees = await prisma.employee.findMany({
-        include: {
-          _count: {
-            select: {
-              leads: {
-                where: {
-                  status: { notIn: ['Converted', 'Lost'] },
+      if (req.user?.role === 'Employee' && req.user.employeeId) {
+        finalEmployeeId = req.user.employeeId;
+      } else {
+        const employees = await prisma.employee.findMany({
+          include: {
+            _count: {
+              select: {
+                leads: {
+                  where: {
+                    status: { notIn: ['Converted', 'Lost'] },
+                  },
                 },
               },
             },
           },
-        },
-      });
-      if (employees.length > 0) {
-        employees.sort((a, b) => a._count.leads - b._count.leads);
-        finalEmployeeId = employees[0].id;
+        });
+        if (employees.length > 0) {
+          employees.sort((a, b) => a._count.leads - b._count.leads);
+          finalEmployeeId = employees[0].id;
+        }
       }
     }
 

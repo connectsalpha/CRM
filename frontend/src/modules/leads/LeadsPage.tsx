@@ -125,6 +125,9 @@ export default function LeadsPage() {
       setIsModalOpen(false);
       addToast('Lead created successfully!');
     },
+    onError: (err: any) => {
+      addToast(err.response?.data?.error || 'Failed to create lead', 'error');
+    },
   });
 
   const updateMutation = useMutation({
@@ -136,12 +139,19 @@ export default function LeadsPage() {
       setEditingLead(null);
       addToast('Lead updated successfully!');
     },
+    onError: (err: any) => {
+      addToast(err.response?.data?.error || 'Failed to update lead', 'error');
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/leads/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      addToast('Lead deleted successfully!');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.error || 'Failed to delete lead', 'error');
     },
   });
 
@@ -149,6 +159,10 @@ export default function LeadsPage() {
     mutationFn: (id: number) => api.post(`/leads/${id}/convert`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      addToast('Lead converted to Customer successfully!');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.error || 'Failed to convert lead', 'error');
     },
   });
 
