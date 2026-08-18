@@ -8,8 +8,13 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto bg-white border border-slate-200 p-8 rounded-2xl shadow-sm space-y-6">
       <div className="flex items-center gap-4 pb-6 border-b border-slate-100">
-        <div className="bg-blue-50 text-blue-600 p-4 rounded-full">
-          <User className="w-8 h-8" />
+        <div className="w-16 h-16 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center justify-center font-bold text-xl hover:scale-105 hover:bg-indigo-100 transition-all duration-200 cursor-default shadow-sm">
+          {(() => {
+            if (!user?.name) return 'U';
+            const parts = user.name.trim().split(/\s+/);
+            if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+            return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+          })()}
         </div>
         <div>
           <h2 className="text-2xl font-bold text-slate-800">{user?.name}</h2>

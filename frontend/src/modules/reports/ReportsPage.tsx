@@ -89,7 +89,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-6">
+      <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-card space-y-6 hover-card-premium">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-4">
           <div className="flex gap-2">
             {[
@@ -107,7 +107,7 @@ export default function ReportsPage() {
                   }}
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
                     reportType === tab.id
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/10'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/10'
                       : 'text-slate-500 hover:bg-slate-50'
                   }`}
                 >
@@ -199,7 +199,7 @@ export default function ReportsPage() {
           </div>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-card hover-card-premium">
           {reportType === 'leads' && (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">

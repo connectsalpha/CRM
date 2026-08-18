@@ -32,6 +32,13 @@ export default function DashboardLayout({ children }: LayoutProps) {
     navigate('/login');
   };
 
+  const getInitials = (name?: string) => {
+    if (!name) return 'U';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  };
+
   const navItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Leads', path: '/leads', icon: Target },
@@ -52,7 +59,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
     return location.pathname.startsWith(n.path);
   })?.name || 'CRM System';
 
-  const asideClass = `bg-slate-900 text-white flex flex-col flex-shrink-0 shadow-xl transition-all duration-300 ease-in-out z-20 ${
+  const asideClass = `bg-slate-900 text-white flex flex-col flex-shrink-0 shadow-xl transition-all duration-300 ease-in-out z-20 relative ${
     isCollapsed ? 'w-20' : 'w-64'
   } hidden md:flex`;
 
@@ -70,7 +77,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
             onClick={onItemClick}
             className={`flex items-center rounded-xl text-sm font-semibold transition-all duration-200 gap-3 group px-4 py-3.5 ${
               isActive
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                 : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'
             }`}
             title={isCollapsed ? item.name : undefined}
@@ -95,25 +102,28 @@ export default function DashboardLayout({ children }: LayoutProps) {
         />
       )}
       <aside className={`fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col z-50 transform transition-transform duration-300 ease-in-out md:hidden ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2 rounded-lg text-white font-bold shadow-md">
-              AC
+        <div className="h-20 flex items-center justify-between px-6 border-b border-slate-800/80 flex-shrink-0">
+          <Link to="/" onClick={() => setIsMobileOpen(false)} className="block relative z-10">
+            <div className="relative p-1.5 rounded-xl bg-slate-950/40 border border-slate-800/40 overflow-hidden group/logo transition-all duration-300 animate-brand-fade-in hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5">
+              {/* Soft radial glow */}
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(99,102,241,0.06)_0%,_transparent_70%)] pointer-events-none" />
+              <img 
+                src="/assets/alpha-connects-logo.png" 
+                alt="Alpha Connects Logo" 
+                className="h-11 max-w-[170px] object-contain rounded-lg group-hover/logo:scale-[1.03] transition-transform duration-300"
+              />
             </div>
-            <span className="font-semibold text-lg tracking-wider text-slate-100">
-              Alpha Connects
-            </span>
-          </div>
-          <button onClick={() => setIsMobileOpen(false)} className="text-slate-400 hover:text-slate-200">
-            <X className="w-6 h-6" />
+          </Link>
+          <button onClick={() => setIsMobileOpen(false)} className="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+            <X className="w-5 h-5" />
           </button>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
           <NavLinkList onItemClick={() => setIsMobileOpen(false)} />
         </nav>
         <div className="p-4 border-t border-slate-800 bg-slate-950 flex items-center gap-3">
-          <div className="bg-slate-800 p-2 rounded-full text-slate-300">
-            <UserIcon className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-full bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 flex items-center justify-center font-bold text-sm hover:scale-105 hover:bg-indigo-500/30 transition-all duration-200 cursor-default shadow-sm flex-shrink-0">
+            {getInitials(user?.name)}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate text-slate-200">{user?.name}</p>
@@ -131,20 +141,28 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
       {/* Desktop Sidebar */}
       <aside className={asideClass}>
-        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800 flex-shrink-0">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="bg-blue-600 p-2 rounded-lg text-white font-bold shadow-md shadow-blue-500/20 flex-shrink-0">
-              AC
-            </div>
-            <span className={`font-semibold text-lg tracking-wider text-slate-100 transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
-              Alpha Connects
-            </span>
+        <div className={`h-20 flex items-center border-b border-slate-800/80 flex-shrink-0 relative transition-all duration-300 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+          <div className="flex items-center justify-center w-full transition-all duration-300">
+            <Link to="/" className={`relative z-10 block transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-full max-w-[180px]'} flex justify-center`}>
+              <div className="relative p-1 rounded-xl bg-slate-950/45 border border-slate-800/40 overflow-hidden group/logo transition-all duration-300 animate-brand-fade-in hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/10">
+                {/* Soft radial glow */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(99,102,241,0.08)_0%,_transparent_70%)] pointer-events-none" />
+                <img 
+                  src="/assets/alpha-connects-logo.png" 
+                  alt="Alpha Connects Logo" 
+                  className={`h-16 rounded-lg transition-all duration-300 group-hover/logo:scale-[1.03] ${
+                    isCollapsed ? 'w-16 object-cover object-left' : 'w-auto max-w-full object-contain'
+                  }`}
+                />
+              </div>
+            </Link>
           </div>
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)} 
-            className="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-800 transition-colors hidden md:block"
+            className="absolute -right-3 top-7 bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 p-1 rounded-full shadow-md transition-all duration-200 hidden md:block z-30 hover:scale-110 active:scale-95"
+            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
           </button>
         </div>
 
@@ -154,8 +172,8 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
         <div className="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="bg-slate-800 p-2 rounded-full text-slate-300 flex-shrink-0">
-              <UserIcon className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-full bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 flex items-center justify-center font-bold text-sm hover:scale-105 hover:bg-indigo-500/30 transition-all duration-200 cursor-default shadow-sm flex-shrink-0">
+              {getInitials(user?.name)}
             </div>
             <div className={`transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 pointer-events-none' : 'opacity-100'}`}>
               <p className="text-sm font-semibold truncate text-slate-200">{user?.name}</p>

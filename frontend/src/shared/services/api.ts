@@ -52,6 +52,14 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError);
         isRefreshing = false;
+        
+        // Dynamically import store to avoid circular dependency and clear state
+        import('../hooks/useAuthStore.js')
+          .then(({ useAuthStore }) => {
+            useAuthStore.setState({ user: null, isAuthenticated: false, isLoading: false, isCheckingAuth: false });
+          })
+          .catch(() => {});
+
         return Promise.reject(refreshError);
       }
     }

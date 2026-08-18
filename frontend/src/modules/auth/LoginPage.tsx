@@ -7,8 +7,8 @@ import { useAuthStore } from '../../shared/hooks/useAuthStore.js';
 import { KeyRound, Mail, AlertCircle, ShieldAlert, Check } from 'lucide-react';
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().trim().min(1, 'Email is required').email('Invalid email address'),
+  password: z.string().min(1, 'Password is required').min(6, 'Password must be at least 6 characters'),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -37,8 +37,8 @@ export default function LoginPage() {
   };
 
   const handleCopy = (email: string, pass: string, key: string) => {
-    setValue('email', email);
-    setValue('password', pass);
+    setValue('email', email, { shouldValidate: true, shouldDirty: true });
+    setValue('password', pass, { shouldValidate: true, shouldDirty: true });
     navigator.clipboard.writeText(`${email} | ${pass}`);
     setCopiedText(key);
     setTimeout(() => setCopiedText(null), 2000);
@@ -50,10 +50,12 @@ export default function LoginPage() {
 
       <div className="max-w-md w-full relative z-10 animate-fade-in">
         <div className="bg-slate-900/70 backdrop-blur-xl border border-slate-800/80 p-8 rounded-2xl shadow-2xl transition-all duration-300">
-          <div className="text-center mb-8">
-            <div className="inline-flex bg-primary p-3 rounded-2xl text-white font-black text-2xl shadow-lg shadow-primary/20 mb-3 hover:scale-105 transition-transform duration-200 cursor-default">
-              AC
-            </div>
+          <div className="text-center mb-8 flex flex-col items-center">
+            <img 
+              src="/assets/alpha-connects-logo.png" 
+              alt="Alpha Connects Logo" 
+              className="h-12 w-auto object-contain rounded-xl shadow-lg mb-4 hover:scale-105 transition-transform duration-200 cursor-default"
+            />
             <h2 className="text-2xl font-bold text-slate-100 tracking-tight">Alpha Connects CRM</h2>
             <p className="text-sm text-slate-400 mt-1">Sign in to manage your customer relationships</p>
           </div>

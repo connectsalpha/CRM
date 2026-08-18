@@ -29,19 +29,29 @@
 
 @layer components {
   .input-premium {
-    @apply w-full border border-border px-3.5 py-2 rounded-md outline-none focus:border-primary focus:ring-4 focus:ring-indigo-500/10 transition-all text-[14px] font-normal text-text-primary bg-white;
+    @apply w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all text-[14px] font-normal text-text-primary bg-white;
   }
 
   .btn-primary {
-    @apply bg-primary hover:bg-primary-hover text-white font-semibold px-4 py-2.5 rounded-md text-[14px] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2;
+    @apply bg-primary hover:bg-primary-hover text-white font-semibold px-4 py-2.5 rounded-xl text-[14px] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-sm hover:shadow-md;
   }
 
   .btn-secondary {
-    @apply bg-white border border-border text-text-primary font-semibold px-4 py-2.5 rounded-md text-[14px] transition-all hover:bg-slate-50 active:bg-slate-100 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2;
+    @apply bg-white border border-slate-200 text-text-primary font-semibold px-4 py-2.5 rounded-xl text-[14px] transition-all hover:bg-slate-50 active:bg-slate-100 active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-sm;
   }
   
   .btn-danger {
-    @apply bg-danger hover:bg-red-700 text-white font-semibold px-4 py-2.5 rounded-md text-[14px] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2;
+    @apply bg-danger hover:bg-red-700 text-white font-semibold px-4 py-2.5 rounded-xl text-[14px] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-sm hover:shadow-md;
+  }
+
+  /* Reusable Interactive Hover Card */
+  .hover-card-premium {
+    @apply transition-all duration-300 ease-out;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hover-card-premium {
+      @apply hover:-translate-y-1 hover:scale-[1.008] hover:shadow-lg hover:border-indigo-300/60;
+    }
   }
 }
 
@@ -59,4 +69,18 @@
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+@keyframes brandFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-brand-fade-in {
+  animation: brandFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

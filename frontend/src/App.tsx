@@ -20,9 +20,9 @@ import ToastContainer from './shared/components/ToastContainer.js';
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
-  const { isAuthenticated, isLoading, user } = useAuthStore();
+  const { isAuthenticated, isCheckingAuth, user } = useAuthStore();
 
-  if (isLoading) {
+  if (isCheckingAuth) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-900">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -42,13 +42,13 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
 }
 
 export default function App() {
-  const { checkAuth, isLoading } = useAuthStore();
+  const { checkAuth, isCheckingAuth } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
-  if (isLoading) {
+  if (isCheckingAuth) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-900">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>

@@ -21,19 +21,49 @@ import {
 } from 'lucide-react';
 
 const leadSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  mobile: z.string().min(1, 'Mobile is required'),
-  whatsappNumber: z.string().optional(),
-  email: z.string().email('Invalid email'),
-  businessName: z.string().optional(),
-  location: z.string().optional(),
-  interestedService: z.string().optional(),
+  name: z.string()
+    .trim()
+    .min(1, 'Name is required')
+    .refine(v => !/^\d+$/.test(v), 'Please enter a valid name.'),
+  mobile: z.string()
+    .trim()
+    .refine(v => /^\d{10}$/.test(v), 'Mobile number must be exactly 10 digits'),
+  whatsappNumber: z.string()
+    .trim()
+    .min(1, 'WhatsApp number is required')
+    .refine(v => /^\d{10}$/.test(v), 'WhatsApp number must be exactly 10 digits'),
+  email: z.string()
+    .trim()
+    .min(1, 'Email is required')
+    .email('Enter a valid email address'),
+  businessName: z.string()
+    .trim()
+    .min(1, 'Business name is required'),
+  location: z.string()
+    .trim()
+    .min(1, 'Location is required'),
+  interestedService: z.string()
+    .trim()
+    .min(1, 'Interested service is required'),
   source: z.string().min(1, 'Source is required'),
   status: z.string().default('New Lead'),
   priority: z.string().default('Medium'),
-  dealValue: z.preprocess((val) => Number(val) || 0, z.number().nonnegative()),
-  followupDate: z.string().optional().nullable(),
-  notes: z.string().optional(),
+  dealValue: z.preprocess((val) => {
+    if (val === '' || val === undefined || val === null) return 0;
+    const num = Number(val);
+    return isNaN(num) ? -1 : num;
+  }, z.number().nonnegative('Deal value cannot be negative')),
+  followupDate: z.string()
+    .trim()
+    .min(1, 'Follow-up date is required')
+    .refine(v => {
+      const date = Date.parse(v);
+      return !isNaN(date);
+    }, 'Invalid date format'),
+  notes: z.string()
+    .max(1000, 'Notes cannot exceed 1000 characters')
+    .optional()
+    .transform(v => v ? v.trim() : ''),
   assignedEmployeeId: z.preprocess((val) => val ? Number(val) : null, z.number().nullable().optional()),
 });
 
@@ -126,7 +156,9 @@ export default function LeadsPage() {
       addToast('Lead created successfully!');
     },
     onError: (err: any) => {
-      addToast(err.response?.data?.error || 'Failed to create lead', 'error');
+      const serverErrors = err.response?.data?.errors;
+      const firstError = serverErrors ? Object.values(serverErrors)[0] : null;
+      addToast((firstError as string) || err.response?.data?.error || 'Failed to create lead', 'error');
     },
   });
 
@@ -140,7 +172,9 @@ export default function LeadsPage() {
       addToast('Lead updated successfully!');
     },
     onError: (err: any) => {
-      addToast(err.response?.data?.error || 'Failed to update lead', 'error');
+      const serverErrors = err.response?.data?.errors;
+      const firstError = serverErrors ? Object.values(serverErrors)[0] : null;
+      addToast((firstError as string) || err.response?.data?.error || 'Failed to update lead', 'error');
     },
   });
 
@@ -175,6 +209,16 @@ export default function LeadsPage() {
     resolver: zodResolver(leadSchema),
   });
 
+  const handlePhoneKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!/[0-9]/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  const onFormError = (errors: any) => {
+    addToast('Please correct the highlighted fields before creating the lead.', 'error');
+  };
+
   const openCreateModal = () => {
     setEditingLead(null);
     reset({
@@ -189,6 +233,7 @@ export default function LeadsPage() {
       status: 'New Lead',
       priority: 'Medium',
       dealValue: 0,
+      followupDate: '',
       notes: '',
       assignedEmployeeId: null,
     });
@@ -363,7 +408,7 @@ export default function LeadsPage() {
                       key={lead.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, lead.id)}
-                      className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md cursor-grab active:cursor-grabbing transition-all space-y-3 group"
+                      className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover-card-premium cursor-grab active:cursor-grabbing transition-all space-y-3 group"
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -546,81 +591,90 @@ export default function LeadsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <form onSubmit={handleSubmit(onSubmit, onFormError)} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Name</label>
-                  <input type="text" {...register('name')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" />
+                  <input type="text" {...register('name')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`} />
                   {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
-                  <input type="email" {...register('email')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" />
+                  <input type="email" {...register('email')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`} />
                   {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Mobile</label>
-                  <input type="text" {...register('mobile')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" />
+                  <input type="tel" inputMode="numeric" maxLength={10} onKeyPress={handlePhoneKeyPress} {...register('mobile')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.mobile ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`} />
                   {errors.mobile && <p className="text-xs text-red-500 mt-1">{errors.mobile.message}</p>}
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">WhatsApp Number</label>
-                  <input type="text" {...register('whatsappNumber')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" />
+                  <input type="tel" inputMode="numeric" maxLength={10} onKeyPress={handlePhoneKeyPress} {...register('whatsappNumber')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.whatsappNumber ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`} />
+                  {errors.whatsappNumber && <p className="text-xs text-red-500 mt-1">{errors.whatsappNumber.message}</p>}
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Business Name</label>
-                  <input type="text" {...register('businessName')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" />
+                  <input type="text" {...register('businessName')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.businessName ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`} />
+                  {errors.businessName && <p className="text-xs text-red-500 mt-1">{errors.businessName.message}</p>}
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Location</label>
-                  <input type="text" {...register('location')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" />
+                  <input type="text" {...register('location')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.location ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`} />
+                  {errors.location && <p className="text-xs text-red-500 mt-1">{errors.location.message}</p>}
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Interested Service</label>
-                  <input type="text" {...register('interestedService')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" />
+                  <input type="text" {...register('interestedService')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.interestedService ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`} />
+                  {errors.interestedService && <p className="text-xs text-red-500 mt-1">{errors.interestedService.message}</p>}
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Source</label>
-                  <select {...register('source')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium bg-white">
+                  <select {...register('source')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium bg-white ${errors.source ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`}>
                     {LEAD_SOURCES.map((src) => (
                       <option key={src} value={src}>{src}</option>
                     ))}
                   </select>
+                  {errors.source && <p className="text-xs text-red-500 mt-1">{errors.source.message}</p>}
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Status</label>
-                  <select {...register('status')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium bg-white">
+                  <select {...register('status')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium bg-white ${errors.status ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`}>
                     {LEAD_STATUSES.map((st) => (
                       <option key={st} value={st}>{st}</option>
                     ))}
                   </select>
+                  {errors.status && <p className="text-xs text-red-500 mt-1">{errors.status.message}</p>}
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Priority</label>
-                  <select {...register('priority')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium bg-white">
+                  <select {...register('priority')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium bg-white ${errors.priority ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`}>
                     {PRIORITIES.map((p) => (
                       <option key={p} value={p}>{p}</option>
                     ))}
                   </select>
+                  {errors.priority && <p className="text-xs text-red-500 mt-1">{errors.priority.message}</p>}
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Deal Value (₹)</label>
-                  <input type="number" {...register('dealValue')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" />
+                  <input type="number" step="any" {...register('dealValue')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.dealValue ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`} />
+                  {errors.dealValue && <p className="text-xs text-red-500 mt-1">{errors.dealValue.message}</p>}
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Follow-up Date</label>
-                  <input type="date" {...register('followupDate')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" />
+                  <input type="date" {...register('followupDate')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.followupDate ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`} />
+                  {errors.followupDate && <p className="text-xs text-red-500 mt-1">{errors.followupDate.message}</p>}
                 </div>
 
                 {user?.role === 'Admin' && (
@@ -638,7 +692,8 @@ export default function LeadsPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notes</label>
-                <textarea {...register('notes')} rows={3} className="w-full border border-slate-200 px-3.5 py-2.5 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium"></textarea>
+                <textarea {...register('notes')} rows={3} className={`w-full border px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.notes ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`}></textarea>
+                {errors.notes && <p className="text-xs text-red-500 mt-1">{errors.notes.message}</p>}
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 flex-shrink-0">

@@ -4,13 +4,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../../shared/services/api.js';
+import { useToastStore } from '../../shared/hooks/useToastStore.js';
 import { Plus, Check, X, Clock, Calendar, Trash2 } from 'lucide-react';
 
 const followupSchema = z.object({
   customerId: z.preprocess((val) => Number(val), z.number().min(1, 'Customer is required')),
   date: z.string().min(1, 'Date is required'),
   reminder: z.boolean().default(false),
-  notes: z.string().optional(),
+  notes: z.string().max(1000, 'Notes cannot exceed 1000 characters').optional().transform(v => v ? v.trim() : ''),
   status: z.string().default('Pending'),
 });
 
@@ -18,6 +19,7 @@ type FollowupFormValues = z.infer<typeof followupSchema>;
 
 export default function FollowupsPage() {
   const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data: followups = [], isLoading } = useQuery({
@@ -42,6 +44,12 @@ export default function FollowupsPage() {
       queryClient.invalidateQueries({ queryKey: ['followups'] });
       setIsModalOpen(false);
       reset();
+      addToast('Follow-up scheduled successfully!');
+    },
+    onError: (err: any) => {
+      const serverErrors = err.response?.data?.errors;
+      const firstError = serverErrors ? Object.values(serverErrors)[0] : null;
+      addToast((firstError as string) || err.response?.data?.error || 'Failed to schedule follow-up', 'error');
     },
   });
 
@@ -50,6 +58,10 @@ export default function FollowupsPage() {
       api.put(`/followups/${id}`, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['followups'] });
+      addToast('Follow-up status updated!');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.error || 'Failed to update status', 'error');
     },
   });
 
@@ -57,6 +69,10 @@ export default function FollowupsPage() {
     mutationFn: (id: number) => api.delete(`/followups/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['followups'] });
+      addToast('Follow-up deleted successfully!');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.error || 'Failed to delete follow-up', 'error');
     },
   });
 
@@ -68,6 +84,10 @@ export default function FollowupsPage() {
   } = useForm<FollowupFormValues>({
     resolver: zodResolver(followupSchema),
   });
+
+  const onFormError = (errors: any) => {
+    addToast('Please correct the highlighted fields before scheduling the follow-up.', 'error');
+  };
 
   const onSubmit = (data: FollowupFormValues) => {
     createMutation.mutate(data);
@@ -121,7 +141,7 @@ export default function FollowupsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {followups.map((f: any) => (
-                  <tr key={f.id} className="hover:bg-bg transition-colors h-12 text-[14px]">
+                  <tr key={f.id} className="table-row-premium border-b border-slate-100 last:border-b-0 h-12 text-[14px]">
                     <td className="p-4 font-semibold text-text-primary">{f.customer?.lead?.name}</td>
                     <td className="p-4 text-text-secondary">
                       {new Date(f.date).toLocaleString()}
@@ -190,10 +210,10 @@ export default function FollowupsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4 font-sans">
+            <form onSubmit={handleSubmit(onSubmit, onFormError)} className="p-6 space-y-4 font-sans">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Select Customer</label>
-                <select {...register('customerId')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-white text-sm font-medium">
+                <select {...register('customerId')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all bg-white text-sm font-medium ${errors.customerId ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`}>
                   <option value="">Select a Customer</option>
                   {customers.map((c: any) => (
                     <option key={c.id} value={c.id}>{c.lead?.name} ({c.lead?.businessName || 'No Company'})</option>
@@ -204,7 +224,7 @@ export default function FollowupsPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Follow-up Date & Time</label>
-                <input type="datetime-local" {...register('date')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" />
+                <input type="datetime-local" {...register('date')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.date ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`} />
                 {errors.date && <p className="text-xs text-red-500 mt-1">{errors.date.message}</p>}
               </div>
 
@@ -215,7 +235,8 @@ export default function FollowupsPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notes / Objectives</label>
-                <textarea {...register('notes')} rows={3} className="w-full border border-slate-200 px-3.5 py-2.5 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium"></textarea>
+                <textarea {...register('notes')} rows={3} className={`w-full border px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.notes ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`}></textarea>
+                {errors.notes && <p className="text-xs text-red-500 mt-1">{errors.notes.message}</p>}
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">

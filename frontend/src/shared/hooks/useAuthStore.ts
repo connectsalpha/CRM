@@ -13,6 +13,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isCheckingAuth: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -22,19 +23,21 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
-  isLoading: true,
+  isLoading: false,
+  isCheckingAuth: true,
   error: null,
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
       const response = await api.post('/auth/login', { email, password });
       const { user } = response.data;
-      set({ user, isAuthenticated: true, isLoading: false });
+      set({ user, isAuthenticated: true, isLoading: false, isCheckingAuth: false });
     } catch (err: any) {
       set({
         error: err.response?.data?.error || 'Login failed',
         isLoading: false,
         isAuthenticated: false,
+        isCheckingAuth: false,
       });
       throw err;
     }
@@ -45,14 +48,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (err) {
       // Ignore network errors on logout
     }
-    set({ user: null, isAuthenticated: false, isLoading: false });
+    set({ user: null, isAuthenticated: false, isLoading: false, isCheckingAuth: false });
   },
   checkAuth: async () => {
     try {
       const response = await api.get('/auth/me');
-      set({ user: response.data, isAuthenticated: true, isLoading: false });
+      set((state) => {
+        if (state.isAuthenticated) return { isCheckingAuth: false };
+        return { user: response.data, isAuthenticated: true, isLoading: false, isCheckingAuth: false };
+      });
     } catch (err) {
-      set({ user: null, isAuthenticated: false, isLoading: false });
+      set((state) => {
+        if (state.isAuthenticated) return { isCheckingAuth: false };
+        return { user: null, isAuthenticated: false, isLoading: false, isCheckingAuth: false };
+      });
     }
   },
 }));

@@ -243,7 +243,7 @@ export default function DashboardPage() {
         {cardStats.map((card) => {
           const Icon = card.icon;
           return (
-            <div key={card.name} className="bg-white border border-border p-5 rounded-lg shadow-card hover:border-primary/20 hover:shadow-md transition-all duration-300 flex flex-col items-start gap-4 cursor-default">
+            <div key={card.name} className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-card hover-card-premium flex flex-col items-start gap-4 cursor-default">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
                 <Icon className="w-5 h-5" />
               </div>
@@ -259,7 +259,7 @@ export default function DashboardPage() {
 
       {/* 2. Visual Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-sm lg:col-span-2 space-y-6 flex flex-col justify-between">
+        <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-card lg:col-span-2 space-y-6 flex flex-col justify-between hover-card-premium">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -290,7 +290,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Donut Chart: Leads By Source */}
-        <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-sm flex flex-col justify-between h-[352px]">
+        <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-card flex flex-col justify-between h-[352px] hover-card-premium">
           <h3 className="font-bold text-slate-800 text-base">Leads by Source</h3>
           <div className="flex-1 relative flex items-center justify-center">
             {leadsBySourceData.length > 0 ? (
@@ -323,7 +323,7 @@ export default function DashboardPage() {
       {/* 3. Details Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Pipeline Summary Progress Bars */}
-        <div className="bg-white border border-border p-5 rounded-lg shadow-card lg:col-span-2 flex flex-col justify-between gap-5 font-sans">
+        <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-card lg:col-span-2 flex flex-col justify-between gap-5 font-sans hover-card-premium">
           <div>
             <div className="flex items-center gap-2">
               <Target className="w-5 h-5 text-primary" />
@@ -399,7 +399,7 @@ export default function DashboardPage() {
         {/* CRM Insights & Quick activities logs */}
         <div className="space-y-6 flex flex-col justify-between">
           {/* Actionable Insights */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 p-6 rounded-2xl shadow-sm space-y-4 flex-1">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 p-6 rounded-2xl shadow-card space-y-4 flex-1 hover-card-premium">
             <h4 className="font-bold text-blue-900 text-sm flex items-center gap-2">
               <Lightbulb className="w-4 h-4 text-blue-700" />
               SaaS CRM Insights
@@ -421,7 +421,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Activities Timeline Feed */}
-          <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-sm h-64 flex flex-col justify-between">
+          <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-card h-64 flex flex-col justify-between hover-card-premium">
             <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
               <ActivityIcon className="w-4 h-4 text-blue-600" />
               Recent System Activities

@@ -135,7 +135,7 @@ export default function CustomerDetailsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-6 self-start">
+        <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-card space-y-6 self-start hover-card-premium">
           <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
             <User className="w-5 h-5 text-blue-600" />
             Customer Profile
@@ -173,7 +173,7 @@ export default function CustomerDetailsPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[550px]">
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-card overflow-hidden flex flex-col h-[550px] hover-card-premium">
           <div className="flex border-b border-slate-200 bg-slate-50 overflow-x-auto">
             {[
               { id: 'conversation', label: 'Conversation', icon: MessageSquare },

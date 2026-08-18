@@ -22,10 +22,10 @@ import {
 } from 'lucide-react';
 
 const customerEditSchema = z.object({
-  address: z.string().optional(),
-  industry: z.string().optional(),
-  companySize: z.string().optional(),
-  feedback: z.string().optional(),
+  address: z.string().max(500, 'Address cannot exceed 500 characters').optional(),
+  industry: z.string().max(100, 'Industry cannot exceed 100 characters').optional(),
+  companySize: z.string().max(50, 'Company size cannot exceed 50 characters').optional(),
+  feedback: z.string().max(2000, 'Feedback cannot exceed 2000 characters').optional(),
 });
 
 type EditFormValues = z.infer<typeof customerEditSchema>;
@@ -57,7 +57,9 @@ export default function CustomersPage() {
       setEditingCustomer(null);
     },
     onError: (err: any) => {
-      addToast(err.response?.data?.error || 'Failed to update customer', 'error');
+      const serverErrors = err.response?.data?.errors;
+      const firstError = serverErrors ? Object.values(serverErrors)[0] : null;
+      addToast((firstError as string) || err.response?.data?.error || 'Failed to update customer', 'error');
     },
   });
 
@@ -70,6 +72,10 @@ export default function CustomersPage() {
   } = useForm<EditFormValues>({
     resolver: zodResolver(customerEditSchema),
   });
+
+  const onFormError = (errors: any) => {
+    addToast('Please correct the highlighted fields before saving.', 'error');
+  };
 
   const openEditModal = (customer: any) => {
     setEditingCustomer(customer);
@@ -148,7 +154,7 @@ export default function CustomersPage() {
 
       {/* Stats Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-border p-5 rounded-lg shadow-card flex flex-col items-start gap-4 cursor-default hover:border-primary/20 hover:shadow-md transition-all duration-300">
+        <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-card flex flex-col items-start gap-4 cursor-default hover-card-premium">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
             <Users className="w-5 h-5" />
           </div>
@@ -158,7 +164,7 @@ export default function CustomersPage() {
             <p className="text-[13px] text-text-secondary mt-1">Clients converted from leads</p>
           </div>
         </div>
-        <div className="bg-white border border-border p-5 rounded-lg shadow-card flex flex-col items-start gap-4 cursor-default hover:border-primary/20 hover:shadow-md transition-all duration-300">
+        <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-card flex flex-col items-start gap-4 cursor-default hover-card-premium">
           <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 flex-shrink-0">
             <Clock className="w-5 h-5" />
           </div>
@@ -171,7 +177,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Search Toolbar */}
-      <div className="bg-white p-5 rounded-lg border border-border shadow-card">
+      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-card">
         <div className="relative w-full max-w-xl">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
           <input
@@ -223,7 +229,7 @@ export default function CustomersPage() {
           {filteredCustomers.map((customer: any) => (
             <div
               key={customer.id}
-              className="bg-white border border-border p-5 rounded-lg shadow-card hover:border-primary/20 hover:shadow-md transition-all duration-300 flex flex-col justify-between gap-4 cursor-default group"
+              className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-card hover-card-premium flex flex-col justify-between gap-4 cursor-default group"
             >
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -295,7 +301,7 @@ export default function CustomersPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit(onSubmit, onFormError)} className="p-6 space-y-4">
               {/* Read Only Fields */}
               <div className="p-3 bg-slate-50 rounded-md border border-slate-100 space-y-2">
                 <p className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Lead Info (Read-only)</p>
@@ -327,9 +333,10 @@ export default function CustomersPage() {
                 <input
                   type="text"
                   {...register('address')}
-                  className="input-premium"
+                  className={`input-premium ${errors.address ? 'border-danger focus:border-danger' : ''}`}
                   placeholder="e.g. 12th Floor, MG Road, Bengaluru"
                 />
+                {errors.address && <p className="text-xs text-danger mt-1">{errors.address.message}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -340,9 +347,10 @@ export default function CustomersPage() {
                   <input
                     type="text"
                     {...register('industry')}
-                    className="input-premium"
+                    className={`input-premium ${errors.industry ? 'border-danger focus:border-danger' : ''}`}
                     placeholder="e.g. SaaS, Fintech"
                   />
+                  {errors.industry && <p className="text-xs text-danger mt-1">{errors.industry.message}</p>}
                 </div>
                 <div>
                   <label className="block text-[13px] font-medium text-text-primary mb-1 flex items-center gap-1">
@@ -351,9 +359,10 @@ export default function CustomersPage() {
                   <input
                     type="text"
                     {...register('companySize')}
-                    className="input-premium"
+                    className={`input-premium ${errors.companySize ? 'border-danger focus:border-danger' : ''}`}
                     placeholder="e.g. 10-50, 100+"
                   />
+                  {errors.companySize && <p className="text-xs text-danger mt-1">{errors.companySize.message}</p>}
                 </div>
               </div>
 
@@ -364,9 +373,10 @@ export default function CustomersPage() {
                 <textarea
                   {...register('feedback')}
                   rows={3}
-                  className="input-premium py-2 resize-none"
+                  className={`input-premium py-2 resize-none ${errors.feedback ? 'border-danger focus:border-danger' : ''}`}
                   placeholder="Enter custom customer feedback or general notes..."
                 />
+                {errors.feedback && <p className="text-xs text-danger mt-1">{errors.feedback.message}</p>}
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-border mt-6">

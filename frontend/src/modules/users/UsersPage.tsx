@@ -63,7 +63,9 @@ export default function UsersPage() {
       resetCreate();
     },
     onError: (err: any) => {
-      addToast(err.response?.data?.error || 'Failed to create user', 'error');
+      const serverErrors = err.response?.data?.errors;
+      const firstError = serverErrors ? Object.values(serverErrors)[0] : null;
+      addToast((firstError as string) || err.response?.data?.error || 'Failed to create user', 'error');
     },
   });
 
@@ -88,7 +90,9 @@ export default function UsersPage() {
       resetUpdate();
     },
     onError: (err: any) => {
-      addToast(err.response?.data?.error || 'Failed to update user', 'error');
+      const serverErrors = err.response?.data?.errors;
+      const firstError = serverErrors ? Object.values(serverErrors)[0] : null;
+      addToast((firstError as string) || err.response?.data?.error || 'Failed to update user', 'error');
     },
   });
 
@@ -126,6 +130,10 @@ export default function UsersPage() {
   } = useForm<UpdateFormValues>({
     resolver: zodResolver(userUpdateSchema),
   });
+
+  const onFormError = (errors: any) => {
+    addToast('Please correct the highlighted fields before saving the user.', 'error');
+  };
 
   const openEditModal = (u: any) => {
     setEditingUser(u);
@@ -197,7 +205,7 @@ export default function UsersPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-4 bg-white border border-border p-5 rounded-lg shadow-card">
+      <div className="flex flex-col sm:flex-row gap-4 bg-white border border-slate-200/80 p-5 rounded-2xl shadow-card">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
           <input
@@ -239,7 +247,7 @@ export default function UsersPage() {
           <p className="text-sm text-text-secondary">Try refining your search terms or filters.</p>
         </div>
       ) : (
-        <div className="bg-white border border-border rounded-lg overflow-hidden shadow-card">
+        <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-card hover-card-premium">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
@@ -255,7 +263,7 @@ export default function UsersPage() {
                 {filteredUsers.map((u: any) => {
                   const userRole = u.role?.name || u.role;
                   return (
-                    <tr key={u.id} className="hover:bg-bg transition-colors h-12 text-[14px]">
+                    <tr key={u.id} className="table-row-premium border-b border-slate-100 last:border-b-0 h-12 text-[14px]">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs select-none">
@@ -328,8 +336,8 @@ export default function UsersPage() {
             <form
               onSubmit={
                 editingUser
-                  ? handleSubmitUpdate(onSubmitUpdate)
-                  : handleSubmitCreate(onSubmitCreate)
+                  ? handleSubmitUpdate(onSubmitUpdate, onFormError)
+                  : handleSubmitCreate(onSubmitCreate, onFormError)
               }
               className="p-6 space-y-4"
             >

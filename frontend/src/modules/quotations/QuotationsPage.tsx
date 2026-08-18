@@ -4,6 +4,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../../shared/services/api.js';
+import { useToastStore } from '../../shared/hooks/useToastStore.js';
 import { formatCurrency } from '../../shared/utils/format.js';
 import { Plus, Printer, X, FileText, Trash2 } from 'lucide-react';
 
@@ -22,6 +23,7 @@ type QuotationFormValues = z.infer<typeof quotationSchema>;
 
 export default function QuotationsPage() {
   const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [printingQuote, setPrintingQuote] = useState<any>(null);
 
@@ -47,6 +49,12 @@ export default function QuotationsPage() {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
       setIsModalOpen(false);
       reset();
+      addToast('Quotation created successfully!');
+    },
+    onError: (err: any) => {
+      const serverErrors = err.response?.data?.errors;
+      const firstError = serverErrors ? Object.values(serverErrors)[0] : null;
+      addToast((firstError as string) || err.response?.data?.error || 'Failed to create quotation', 'error');
     },
   });
 
@@ -54,6 +62,10 @@ export default function QuotationsPage() {
     mutationFn: (id: number) => api.delete(`/quotations/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+      addToast('Quotation deleted successfully!');
+    },
+    onError: (err: any) => {
+      addToast(err.response?.data?.error || 'Failed to delete quotation', 'error');
     },
   });
 
@@ -74,6 +86,10 @@ export default function QuotationsPage() {
     control,
     name: 'items',
   });
+
+  const onFormError = (errors: any) => {
+    addToast('Please correct the highlighted fields before creating the quotation.', 'error');
+  };
 
   const onSubmit = (data: QuotationFormValues) => {
     createMutation.mutate(data);
@@ -135,7 +151,7 @@ export default function QuotationsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {quotations.map((q: any) => (
-                  <tr key={q.id} className="hover:bg-bg transition-colors h-12 text-[14px]">
+                  <tr key={q.id} className="table-row-premium border-b border-slate-100 last:border-b-0 h-12 text-[14px]">
                     <td className="p-4 font-semibold text-text-primary">#{q.quoteNo}</td>
                     <td className="p-4 text-text-secondary">{q.customer?.lead?.name}</td>
                     <td className="p-4 text-text-secondary">{q.items?.length || 0}</td>
@@ -259,11 +275,11 @@ export default function QuotationsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar font-sans">
+            <form onSubmit={handleSubmit(onSubmit, onFormError)} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar font-sans">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Select Customer</label>
-                  <select {...register('customerId')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-white text-sm font-medium">
+                  <select {...register('customerId')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all bg-white text-sm font-medium ${errors.customerId ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`}>
                     <option value="">Select a Customer</option>
                     {customers.map((c: any) => (
                       <option key={c.id} value={c.id}>{c.lead?.name}</option>
@@ -274,33 +290,44 @@ export default function QuotationsPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Quote Number</label>
-                  <input type="text" {...register('quoteNo')} className="w-full border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium" placeholder="QT-1001" />
+                  <input type="text" {...register('quoteNo')} className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.quoteNo ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`} placeholder="QT-1001" />
                   {errors.quoteNo && <p className="text-xs text-red-500 mt-1">{errors.quoteNo.message}</p>}
                 </div>
               </div>
 
               <div className="space-y-3">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Quotation Items</label>
+                {errors.items && <p className="text-xs text-red-500 mt-1">{errors.items.message}</p>}
                 {fields.map((field, index) => (
                   <div key={field.id} className="flex gap-2 items-start">
-                    <input
-                      type="text"
-                      placeholder="Item Name"
-                      {...register(`items.${index}.itemName` as const)}
-                      className="flex-1 border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Qty"
-                      {...register(`items.${index}.quantity` as const)}
-                      className="w-16 border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium text-center"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Price"
-                      {...register(`items.${index}.price` as const)}
-                      className="w-24 border border-slate-200 px-3.5 py-2 rounded-xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium text-right"
-                    />
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        placeholder="Item Name"
+                        {...register(`items.${index}.itemName` as const)}
+                        className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.items?.[index]?.itemName ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`}
+                      />
+                      {errors.items?.[index]?.itemName && <p className="text-xs text-red-500 mt-1">{errors.items[index]?.itemName?.message}</p>}
+                    </div>
+                    <div className="w-20">
+                      <input
+                        type="number"
+                        placeholder="Qty"
+                        {...register(`items.${index}.quantity` as const)}
+                        className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium text-center ${errors.items?.[index]?.quantity ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`}
+                      />
+                      {errors.items?.[index]?.quantity && <p className="text-xs text-red-500 mt-1 text-center">{errors.items[index]?.quantity?.message}</p>}
+                    </div>
+                    <div className="w-28">
+                      <input
+                        type="number"
+                        step="any"
+                        placeholder="Price"
+                        {...register(`items.${index}.price` as const)}
+                        className={`w-full border px-3.5 py-2 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium text-right ${errors.items?.[index]?.price ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`}
+                      />
+                      {errors.items?.[index]?.price && <p className="text-xs text-red-500 mt-1 text-right">{errors.items[index]?.price?.message}</p>}
+                    </div>
                     {fields.length > 1 && (
                       <button
                         type="button"

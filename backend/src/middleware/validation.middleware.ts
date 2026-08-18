@@ -20,8 +20,15 @@ export const validateRequest = (schemas: {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
+        const formattedErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          const path = err.path.join('.');
+          formattedErrors[path] = err.message;
+        });
         return res.status(400).json({
           error: 'Validation failed',
+          message: 'Validation failed',
+          errors: formattedErrors,
           details: error.errors.map((err) => ({
             path: err.path.join('.'),
             message: err.message,
