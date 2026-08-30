@@ -22,6 +22,7 @@ model User {
   employee  Employee?
   leads     Lead[]     @relation("CreatedLeads")
   activities Activity[]
+  uploadedAttachments LeadAttachment[]
   refreshToken String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -58,6 +59,7 @@ model Lead {
   assignedEmployee   Employee? @relation("AssignedEmployee", fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
   
   customer           Customer?
+  attachments        LeadAttachment[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -129,4 +131,20 @@ model Activity {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+model LeadAttachment {
+  id           Int      @id @default(autoincrement())
+  leadId       Int
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  filename     String   @unique
+  originalName String
+  fileSize     Int
+  mimeType     String
+  storagePath  String
+  uploadedById Int
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  uploadedAt   DateTime @default(now())
+
+  @@index([leadId])
 }

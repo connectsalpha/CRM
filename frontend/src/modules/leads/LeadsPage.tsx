@@ -18,6 +18,8 @@ import {
   X,
   Sparkles,
   RefreshCw,
+  Paperclip,
+  FileText,
 } from 'lucide-react';
 
 const leadSchema = z.object({
@@ -127,6 +129,9 @@ export default function LeadsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedLeadForDetails, setSelectedLeadForDetails] = useState<any>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -221,6 +226,7 @@ export default function LeadsPage() {
 
   const openCreateModal = () => {
     setEditingLead(null);
+    setUploadedFiles([]);
     reset({
       name: '',
       mobile: '',
@@ -242,6 +248,7 @@ export default function LeadsPage() {
 
   const openEditModal = (lead: any) => {
     setEditingLead(lead);
+    setUploadedFiles(lead.attachments || []);
     reset({
       name: lead.name,
       mobile: lead.mobile,
@@ -262,10 +269,99 @@ export default function LeadsPage() {
   };
 
   const onSubmit = (data: LeadFormValues) => {
+    const payload = {
+      ...data,
+      attachments: uploadedFiles.filter((f: any) => !f.id).map((f: any) => ({
+        filename: f.filename,
+        originalName: f.originalName,
+        mimeType: f.mimeType,
+        fileSize: f.fileSize,
+        storagePath: f.storagePath
+      }))
+    };
     if (editingLead) {
-      updateMutation.mutate({ id: editingLead.id, data });
+      updateMutation.mutate({ id: editingLead.id, data: payload as any });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(payload as any);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Frontend validation: Size and format checks
+    const allowedExts = ['.pdf', '.xls', '.xlsx', '.csv', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!allowedExts.includes(fileExt)) {
+      addToast('Invalid file format. Please attach PDF, Excel, CSV, Word, or Image files.', 'error');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB
+      addToast('File size exceeds the 10MB limit.', 'error');
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await api.post('/leads/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setUploadedFiles(prev => [...prev, res.data]);
+      addToast('Document uploaded successfully!');
+    } catch (err: any) {
+      addToast(err.response?.data?.error || 'Failed to upload document.', 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDownloadAttachment = async (attachment: any) => {
+    try {
+      const res = await api.get(`/leads/attachments/${attachment.id}/download`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', attachment.originalName);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      addToast('Failed to download attachment. Access denied or file missing.', 'error');
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: number, filename: string) => {
+    // If it's a newly uploaded file that hasn't been saved in db yet, just remove from state
+    if (!attachmentId) {
+      setUploadedFiles(prev => prev.filter(f => f.filename !== filename));
+      addToast('Document removed from selection.');
+      return;
+    }
+
+    if (window.confirm('Are you sure you want to delete this document?')) {
+      try {
+        await api.delete(`/leads/attachments/${attachmentId}`);
+        addToast('Document deleted successfully!');
+        queryClient.invalidateQueries({ queryKey: ['leads'] });
+        setUploadedFiles(prev => prev.filter(f => f.id !== attachmentId));
+        if (selectedLeadForDetails) {
+          setSelectedLeadForDetails((prev: any) => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              attachments: prev.attachments.filter((a: any) => a.id !== attachmentId)
+            };
+          });
+        }
+      } catch (err) {
+        addToast('Failed to delete document.', 'error');
+      }
     }
   };
 
@@ -412,7 +508,10 @@ export default function LeadsPage() {
                     >
                       <div className="flex justify-between items-start">
                         <div>
-                          <h5 className="font-semibold text-slate-800 text-sm group-hover:text-blue-600 transition-colors">
+                          <h5 
+                            onClick={() => setSelectedLeadForDetails(lead)}
+                            className="font-semibold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors cursor-pointer hover:underline"
+                          >
                             {lead.name}
                           </h5>
                           {lead.businessName && (
@@ -495,7 +594,14 @@ export default function LeadsPage() {
                     .slice((currentPage - 1) * 10, currentPage * 10)
                     .map((lead: any) => (
                       <tr key={lead.id} className="hover:bg-bg transition-colors h-12 text-[14px]">
-                        <td className="p-4 font-semibold text-text-primary">{lead.name}</td>
+                        <td className="p-4 font-semibold text-text-primary">
+                          <span 
+                            onClick={() => setSelectedLeadForDetails(lead)}
+                            className="hover:text-indigo-600 transition-colors cursor-pointer hover:underline"
+                          >
+                            {lead.name}
+                          </span>
+                        </td>
                         <td className="p-4 text-text-secondary">{lead.businessName || '-'}</td>
                         <td className="p-4 text-text-secondary">{lead.mobile}</td>
                         <td className="p-4 text-text-secondary">{lead.email}</td>
@@ -690,6 +796,71 @@ export default function LeadsPage() {
                 )}
               </div>
 
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-500 uppercase">
+                  Lead Documents
+                </label>
+                <div className="border border-dashed border-slate-200 hover:border-indigo-400 rounded-xl p-4 transition-all bg-slate-50/50 flex flex-col items-center justify-center relative cursor-pointer group h-24">
+                  <input 
+                    type="file" 
+                    onChange={handleFileUpload} 
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="flex flex-col items-center gap-1.5 text-center pointer-events-none">
+                    <Paperclip className="w-5 h-5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                    <span className="text-xs font-bold text-slate-600 group-hover:text-indigo-600 transition-colors uppercase tracking-wide">
+                      {uploading ? 'Uploading document...' : 'Attach Documents'}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      PDF, Word, Excel, CSV, or Images up to 10MB (optional)
+                    </span>
+                  </div>
+                </div>
+
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-3 space-y-2 max-h-[160px] overflow-y-auto custom-scrollbar p-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Attached Documents:</p>
+                    <div className="grid grid-cols-1 gap-2">
+                      {uploadedFiles.map((file, idx) => (
+                        <div key={file.id || idx} className="flex items-center justify-between bg-white border border-slate-200 rounded-xl p-2.5 shadow-sm hover-card-premium">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileText className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-slate-800 truncate">{file.originalName}</p>
+                              <p className="text-[9px] text-slate-400 font-medium">
+                                {(file.fileSize / 1024).toFixed(1)} KB • {file.mimeType}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {file.id && (
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadAttachment(file)}
+                                className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-all"
+                                title="Download"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAttachment(file.id, file.filename)}
+                              className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-slate-50 rounded-lg transition-all"
+                              title="Remove"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notes</label>
                 <textarea {...register('notes')} rows={3} className={`w-full border px-3.5 py-2.5 rounded-xl outline-none focus:ring-4 transition-all text-sm font-medium ${errors.notes ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500/10'}`}></textarea>
@@ -716,6 +887,141 @@ export default function LeadsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Lead Details Modal */}
+      {selectedLeadForDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white border border-slate-100 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+              <h3 className="font-bold text-slate-800 text-lg">Lead Details: {selectedLeadForDetails.name}</h3>
+              <button onClick={() => setSelectedLeadForDetails(null)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6">
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Business Name</span>
+                  <span className="text-sm font-semibold text-slate-800">{selectedLeadForDetails.businessName || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Interested Service</span>
+                  <span className="text-sm font-semibold text-slate-800">{selectedLeadForDetails.interestedService || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email Address</span>
+                  <span className="text-sm font-semibold text-slate-800">{selectedLeadForDetails.email}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mobile Number</span>
+                  <span className="text-sm font-semibold text-slate-800">{selectedLeadForDetails.mobile}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">WhatsApp Number</span>
+                  <span className="text-sm font-semibold text-slate-800">{selectedLeadForDetails.whatsappNumber || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Location</span>
+                  <span className="text-sm font-semibold text-slate-800">{selectedLeadForDetails.location || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lead Source</span>
+                  <span className="text-sm font-semibold text-slate-800">{selectedLeadForDetails.source}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status / Pipeline Stage</span>
+                  <span className={`inline-block px-2.5 py-0.5 mt-0.5 rounded-full text-xs font-semibold ${getStatusBadgeClass(selectedLeadForDetails.status)}`}>
+                    {selectedLeadForDetails.status}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Priority Level</span>
+                  <span className={`inline-block px-2.5 py-0.5 mt-0.5 rounded-full text-xs font-semibold ${getPriorityBadgeClass(selectedLeadForDetails.priority)}`}>
+                    {selectedLeadForDetails.priority}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Deal Value</span>
+                  <span className="text-sm font-bold text-emerald-600">{formatCurrency(selectedLeadForDetails.dealValue)}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Follow-up Date</span>
+                  <span className="text-sm font-semibold text-slate-800">
+                    {selectedLeadForDetails.followupDate ? new Date(selectedLeadForDetails.followupDate).toLocaleDateString() : 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned To</span>
+                  <span className="text-sm font-semibold text-slate-800">{selectedLeadForDetails.assignedEmployee?.name || 'Unassigned'}</span>
+                </div>
+              </div>
+
+              <div>
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Notes</span>
+                <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 text-sm text-slate-700 whitespace-pre-wrap min-h-[80px]">
+                  {selectedLeadForDetails.notes || 'No notes added for this lead.'}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lead Documents</span>
+                {!selectedLeadForDetails.attachments || selectedLeadForDetails.attachments.length === 0 ? (
+                  <div className="text-center py-6 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                    <Paperclip className="w-5 h-5 text-slate-400 mx-auto mb-1.5" />
+                    <p className="text-xs text-slate-450 font-semibold">No documents attached</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-1">
+                    {selectedLeadForDetails.attachments.map((file: any) => (
+                      <div key={file.id} className="flex items-center justify-between bg-white border border-slate-200 rounded-xl p-2.5 shadow-sm hover-card-premium">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <FileText className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-slate-800 truncate">{file.originalName}</p>
+                            <p className="text-[9px] text-slate-400 font-medium">
+                              {(file.fileSize / 1024).toFixed(1)} KB • {file.mimeType}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadAttachment(file)}
+                            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-all"
+                            title="Download"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAttachment(file.id, file.filename)}
+                            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-slate-50 rounded-lg transition-all"
+                            title="Delete"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end px-6 py-4 border-t border-slate-100 bg-slate-50 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setSelectedLeadForDetails(null)}
+                className="btn-secondary"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

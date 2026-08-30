@@ -56,6 +56,13 @@ export const leadCreateSchema = z.object({
     .optional()
     .nullable()
     .transform(v => v ? v.trim() : null),
+  attachments: z.array(z.object({
+    filename: z.string(),
+    originalName: z.string(),
+    mimeType: z.string(),
+    fileSize: z.number().positive(),
+    storagePath: z.string()
+  })).optional(),
   assignedEmployeeId: z.number().nullable().optional(),
 });
 
